@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Коммуналка — калькулятор и бюджет</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="topbar no-print">
+    <div class="brand"><span class="logo">⌂</span> Коммуналка</div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="dashboard">Главная</button>
+      <button data-tab="entry">Показания</button>
+      <button data-tab="history">Чеки</button>
+      <button data-tab="charts">Графики</button>
+      <button data-tab="settings">Тарифы и бюджет</button>
+    </nav>
+  </header>
+
+  <main class="no-print">
+    <!-- ГЛАВНАЯ -->
+    <section class="tab" id="tab-dashboard">
+      <div id="emptyState" class="card empty hidden">
+        <h2>Добро пожаловать!</h2>
+        <p>Проверьте тарифы, затем введите показания счётчиков за первый месяц. Или загрузите пример, чтобы посмотреть, как всё работает.</p>
+        <div class="actions">
+          <button class="btn primary" data-goto="entry">Ввести показания</button>
+          <button class="btn" data-goto="settings">Настроить тарифы</button>
+          <button class="btn ghost" id="demoBtn1">Загрузить пример</button>
+        </div>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <div class="card">
+        <div class="card-head">
+          <h2>Календарь оплат</h2>
+          <select id="calYear"></select>
+        </div>
+        <div class="calendar" id="calendar"></div>
+        <div class="legend">
+          <span><i class="sw paid"></i>Оплачено</span>
+          <span><i class="sw unpaid"></i>Не оплачено</span>
+          <span><i class="sw none"></i>Нет данных</span>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Сумма к оплате за последние 12 месяцев</h2>
+        <div class="chart-box"><canvas id="dashChart"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ПОКАЗАНИЯ -->
+    <section class="tab" id="tab-entry">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <h2 id="entryTitle">Новые показания</h2>
+            <label class="inline">Месяц <input type="month" id="fMonth"></label>
+          </div>
+          <h3>Счётчики</h3>
+          <div id="readingsFields"></div>
+          <h3>Фиксированные платежи</h3>
+          <div id="fixedFields"></div>
+          <button class="btn small ghost" id="addFixedForm">+ Добавить платёж</button>
+
+          <h3>Оплата</h3>
+          <div class="pay-grid">
+            <label class="check"><input type="checkbox" id="fPaid"> Оплачено</label>
+            <label class="field">Дата оплаты <input type="date" id="fPaidDate"></label>
+            <label class="field">Оплаченная сумма <input type="text" inputmode="decimal" id="fPaidAmount" placeholder="= итог"></label>
+          </div>
+          <label class="field">Чек об оплате (фото или скан)
+            <input type="file" accept="image/*" id="fPhoto">
+          </label>
+          <div id="photoPreview" class="photo-preview"></div>
+          <label class="field">Заметка <textarea id="fNote" rows="2" placeholder="Например: оплатила через Kaspi"></textarea></label>
+          <div class="actions">
+            <button class="btn primary" id="saveBtn">Сохранить</button>
+            <button class="btn danger ghost hidden" id="deleteBtn">Удалить месяц</button>
+          </div>
+        </div>
+        <div class="card sticky">
+          <h2>Расчёт к оплате</h2>
+          <div id="preview"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ЧЕКИ / ИСТОРИЯ -->
+    <section class="tab" id="tab-history">
+      <div class="card">
+        <div class="card-head">
+          <h2>Все чеки</h2>
+          <div class="filters">
+            <select id="hYear"></select>
+            <select id="hStatus">
+              <option value="all">Все</option>
+              <option value="paid">Оплаченные</option>
+              <option value="unpaid">Не оплаченные</option>
+            </select>
+          </div>
+        </div>
+        <div class="summary" id="hSummary"></div>
+        <div class="table-wrap">
+          <table class="table" id="hTable">
+            <thead>
+              <tr><th>Месяц</th><th class="num">Сумма</th><th>Оплата</th><th class="num">Оплачено</th><th>Фото</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ГРАФИКИ -->
+    <section class="tab" id="tab-charts">
+      <div class="card">
+        <div class="card-head">
+          <h2>Расходы по месяцам</h2>
+          <select id="cPeriod"></select>
+        </div>
+        <div class="chart-box tall"><canvas id="costChart"></canvas></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <h2>Потребление</h2>
+            <select id="cResource"></select>
+          </div>
+          <div class="chart-box"><canvas id="consChart"></canvas></div>
+        </div>
+        <div class="card">
+          <h2>Структура расходов</h2>
+          <div class="chart-box"><canvas id="shareChart"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- НАСТРОЙКИ -->
+    <section class="tab" id="tab-settings">
+      <div class="grid-2">
+        <div class="card">
+          <h2>Тарифы</h2>
+          <p class="muted">Новые тарифы применяются к новым месяцам. Уже сохранённые чеки не пересчитываются.</p>
+          <div id="tariffFields"></div>
+          <h3>Фиксированные платежи (каждый месяц)</h3>
+          <div id="fixedSettings"></div>
+          <button class="btn small ghost" id="addFixedSetting">+ Добавить платёж</button>
+        </div>
+        <div>
+          <div class="card">
+            <h2>Бюджет</h2>
+            <label class="field">Лимит на коммуналку в месяц <input type="text" inputmode="decimal" id="sBudget"></label>
+            <label class="field">Ежемесячный доход (необязательно) <input type="text" inputmode="decimal" id="sIncome" placeholder="для расчёта доли"></label>
+            <label class="field">Валюта <input type="text" id="sCurrency" maxlength="4"></label>
+          </div>
+          <div class="actions"><button class="btn primary" id="saveSettings">Сохранить настройки</button></div>
+          <div class="card">
+            <h2>Данные</h2>
+            <p class="muted">Данные хранятся только в этом браузере. Делайте резервную копию, чтобы не потерять историю.</p>
+            <div class="actions wrap">
+              <button class="btn" id="exportBtn">Скачать резервную копию</button>
+              <label class="btn">Восстановить из файла<input type="file" accept=".json,application/json" id="importInput" hidden></label>
+              <button class="btn ghost" id="demoBtn2">Загрузить пример</button>
+              <button class="btn danger ghost" id="clearBtn">Удалить все данные</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Квитанция -->
+  <dialog id="receiptDlg">
+    <div class="dlg-nav no-print">
+      <button class="btn small ghost" id="rPrev">← Пред.</button>
+      <button class="btn small ghost" id="rNext">След. →</button>
+      <button class="icon-btn" id="rClose" aria-label="Закрыть">✕</button>
+    </div>
+    <div id="receiptBody"></div>
+  </dialog>
+
+  <div id="toast" class="toast no-print"></div>
+  <script src="app.js"></script>
+</body>
+</html>
